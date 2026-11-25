@@ -1,0 +1,331 @@
+{
+  "project_shape": "fullstack",
+  "modules": [
+    {
+      "id": "product-document",
+      "path": "product/document.mjs",
+      "role": [
+        "姿态帧表",
+        "左右朝向",
+        "作用区采样",
+        "事件投递",
+        "循环接缝",
+        "导入文档"
+      ]
+    },
+    {
+      "id": "product-interpolate",
+      "path": "product/interpolate.mjs",
+      "role": [
+        "姿态帧表"
+      ]
+    },
+    {
+      "id": "product-frame-clock",
+      "path": "product/frame-clock.mjs",
+      "role": [
+        "姿态帧表",
+        "作用区采样",
+        "事件投递"
+      ]
+    },
+    {
+      "id": "product-compile",
+      "path": "product/compile.mjs",
+      "role": [
+        "姿态帧表",
+        "左右朝向",
+        "作用区采样",
+        "事件投递",
+        "循环接缝"
+      ]
+    },
+    {
+      "id": "product-index",
+      "path": "product/index.mjs",
+      "role": [
+        "姿态帧表",
+        "导入文档",
+        "冻结校样"
+      ]
+    },
+    {
+      "id": "product-orientation",
+      "path": "product/orientation.mjs",
+      "role": [
+        "左右朝向",
+        "循环接缝"
+      ]
+    },
+    {
+      "id": "product-windows",
+      "path": "product/windows.mjs",
+      "role": [
+        "左右朝向",
+        "作用区采样"
+      ]
+    },
+    {
+      "id": "product-dispatch",
+      "path": "product/dispatch.mjs",
+      "role": [
+        "事件投递"
+      ]
+    },
+    {
+      "id": "product-continuity",
+      "path": "product/continuity.mjs",
+      "role": [
+        "循环接缝"
+      ]
+    },
+    {
+      "id": "server-router",
+      "path": "server/router.mjs",
+      "role": [
+        "导入文档",
+        "冻结校样",
+        "下载版本产物",
+        "重启后复取",
+        "完整性复核"
+      ]
+    },
+    {
+      "id": "server-request-body",
+      "path": "server/request-body.mjs",
+      "role": [
+        "导入文档"
+      ]
+    },
+    {
+      "id": "server-library",
+      "path": "server/library.mjs",
+      "role": [
+        "冻结校样",
+        "下载版本产物",
+        "重启后复取",
+        "完整性复核"
+      ]
+    },
+    {
+      "id": "server-canonical",
+      "path": "server/canonical.mjs",
+      "role": [
+        "冻结校样",
+        "下载版本产物",
+        "重启后复取",
+        "完整性复核"
+      ]
+    },
+    {
+      "id": "server-atomic-write",
+      "path": "server/atomic-write.mjs",
+      "role": [
+        "冻结校样"
+      ]
+    },
+    {
+      "id": "server-environment",
+      "path": "server/environment.mjs",
+      "role": [
+        "重启后复取"
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "id": "proof",
+      "name": "姿态帧表",
+      "entry": "POST /api/preview",
+      "success": "按采样时间作线性姿态插值并绘制根轨迹",
+      "failure": "关键姿态没有首尾端点时拒绝",
+      "verification": "node tools/workflow.mjs proof",
+      "steps": [
+        "从 POST /api/preview 提交或读取数据",
+        "按采样时间作线性姿态插值并绘制根轨迹"
+      ],
+      "module_ids": [
+        "product-document",
+        "product-interpolate",
+        "product-frame-clock",
+        "product-compile",
+        "product-index"
+      ]
+    },
+    {
+      "id": "mirror",
+      "name": "左右朝向",
+      "entry": "POST /api/preview 的 facing",
+      "success": "根位置、手臂旋向、局部作用区镜像",
+      "failure": "未知方向拒绝",
+      "verification": "node tools/workflow.mjs mirror",
+      "steps": [
+        "从 POST /api/preview 的 facing 提交或读取数据",
+        "根位置、手臂旋向、局部作用区镜像"
+      ],
+      "module_ids": [
+        "product-document",
+        "product-orientation",
+        "product-windows",
+        "product-compile"
+      ]
+    },
+    {
+      "id": "windows",
+      "name": "作用区采样",
+      "entry": "POST /api/preview 的 windows",
+      "success": "仅在取样时刻落于半开范围时显示作用区，并列未采样 ID",
+      "failure": "非正长度作用窗拒绝",
+      "verification": "node tools/workflow.mjs windows",
+      "steps": [
+        "从 POST /api/preview 的 windows 提交或读取数据",
+        "仅在取样时刻落于半开范围时显示作用区，并列未采样 ID"
+      ],
+      "module_ids": [
+        "product-document",
+        "product-frame-clock",
+        "product-windows",
+        "product-compile"
+      ]
+    },
+    {
+      "id": "events",
+      "name": "事件投递",
+      "entry": "POST /api/preview 的 events",
+      "success": "事件按所在帧区间投递一次并保留源偏移",
+      "failure": "结束端点上的事件被拒绝",
+      "verification": "node tools/workflow.mjs events",
+      "steps": [
+        "从 POST /api/preview 的 events 提交或读取数据",
+        "事件按所在帧区间投递一次并保留源偏移"
+      ],
+      "module_ids": [
+        "product-document",
+        "product-frame-clock",
+        "product-dispatch",
+        "product-compile"
+      ]
+    },
+    {
+      "id": "seam",
+      "name": "循环接缝",
+      "entry": "POST /api/preview 的 loop",
+      "success": "分别报告角度差、垂向跳变与周期根位移",
+      "failure": "非循环不判断；跳变超阈值在产物中报告",
+      "verification": "node tools/workflow.mjs seam",
+      "steps": [
+        "从 POST /api/preview 的 loop 提交或读取数据",
+        "分别报告角度差、垂向跳变与周期根位移"
+      ],
+      "module_ids": [
+        "product-document",
+        "product-orientation",
+        "product-continuity",
+        "product-compile"
+      ]
+    },
+    {
+      "id": "import",
+      "name": "导入文档",
+      "entry": "POST /api/preview",
+      "success": "规范输入进入校样计算",
+      "failure": "非法 UTF-8、JSON 或字段直接拒绝；不覆盖已有冻结资产",
+      "verification": "node tools/workflow.mjs import",
+      "steps": [
+        "从 POST /api/preview 提交或读取数据",
+        "规范输入进入校样计算"
+      ],
+      "module_ids": [
+        "server-router",
+        "server-request-body",
+        "product-document",
+        "product-index"
+      ]
+    },
+    {
+      "id": "freeze",
+      "name": "冻结校样",
+      "entry": "POST /api/library",
+      "success": "相同规范输入与产物复用同一摘要；并行提交只创建一次",
+      "failure": "无法规范化的草稿不会签发",
+      "verification": "node tools/workflow.mjs freeze",
+      "steps": [
+        "从 POST /api/library 提交或读取数据",
+        "相同规范输入与产物复用同一摘要；并行提交只创建一次"
+      ],
+      "module_ids": [
+        "server-router",
+        "product-index",
+        "server-library",
+        "server-canonical",
+        "server-atomic-write"
+      ]
+    },
+    {
+      "id": "download",
+      "name": "下载版本产物",
+      "entry": "GET /api/library/:id/asset",
+      "success": "返回冻结资产原始字节、正确媒体类型和文件名",
+      "failure": "不存在的资产返回 404",
+      "verification": "node tools/workflow.mjs download",
+      "steps": [
+        "从 GET /api/library/:id/asset 提交或读取数据",
+        "返回冻结资产原始字节、正确媒体类型和文件名"
+      ],
+      "module_ids": [
+        "server-router",
+        "server-library",
+        "server-canonical"
+      ]
+    },
+    {
+      "id": "reopen",
+      "name": "重启后复取",
+      "entry": "GET /api/library 与 GET /api/library/:id",
+      "success": "恢复已有规范文档及成品校样摘要",
+      "failure": "未知或无法读取的版本不会替换当前校样",
+      "verification": "node tools/workflow.mjs reopen",
+      "steps": [
+        "从 GET /api/library 与 GET /api/library/:id 提交或读取数据",
+        "恢复已有规范文档及成品校样摘要"
+      ],
+      "module_ids": [
+        "server-environment",
+        "server-router",
+        "server-library",
+        "server-canonical"
+      ]
+    },
+    {
+      "id": "integrity",
+      "name": "完整性复核",
+      "entry": "GET /api/library/:id[/asset]",
+      "success": "元数据与媒体字节读取前均核对内容摘要",
+      "failure": "磁盘内容不匹配时返回 409",
+      "verification": "node tools/workflow.mjs integrity",
+      "steps": [
+        "从 GET /api/library/:id[/asset] 提交或读取数据",
+        "元数据与媒体字节读取前均核对内容摘要"
+      ],
+      "module_ids": [
+        "server-router",
+        "server-library",
+        "server-canonical"
+      ]
+    }
+  ],
+  "complexity": {
+    "mechanisms": [
+      "policy_rules",
+      "time_semantics",
+      "scheduling",
+      "error_propagation",
+      "snapshot_consistency",
+      "export_freeze",
+      "recovery_rollback",
+      "versioning_audit",
+      "idempotency",
+      "concurrency"
+    ]
+  }
+}

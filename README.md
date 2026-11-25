@@ -1,0 +1,24 @@
+# 步格 · 游戏动画事件与位移校样
+
+将定时关键帧和窗口编译到固定采样帧，支持镜像和循环首尾检查；校样后冻结并下载引擎可用的帧表。
+
+## 启动
+
+需要 Node.js 20 或更新版本，无需安装第三方依赖。
+
+```sh
+npm start
+```
+
+浏览器打开 `http://127.0.0.1:8741`。项目只监听本机回环地址；用 `PORT` 可换端口。`MEDIA_HOME` 可指定数据目录，默认 `.local/`，不进 Git。
+
+## 校样
+
+建议先切到 20 FPS 并拖动时间线，比较同一作用区的采样边界与朝向切换。
+
+可以导入 JSON，或者在「源文档」区域编辑。获取可导入样例：`curl -s http://127.0.0.1:8741/api/demo | node -e 'process.stdin.on("data",c=>s+=c).on("end",()=>console.log(JSON.stringify(JSON.parse(s).document,null,2)));let s=""'`。
+更新校样只计算不落盘；冻结会写入版本库，下载原始 `.json` 资产。可在「冻结版本」中复取已保存版本。
+
+## 检查
+
+`npm run check` 检查所有 JavaScript 模块语法，`npm run demo` 通过本机 HTTP 服务演练核心产物。完整测试套件暂缓；[项目规格](PROJECT_SPEC.md)列出全部生产工作流检查和输入边界。
