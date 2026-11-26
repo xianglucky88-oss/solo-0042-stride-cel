@@ -41,6 +41,13 @@
       ]
     },
     {
+      "id": "product-pack",
+      "path": "product/pack.mjs",
+      "role": [
+        "冻结包按帧复查"
+      ]
+    },
+    {
       "id": "product-index",
       "path": "product/index.mjs",
       "role": [
@@ -311,6 +318,24 @@
         "server-router",
         "server-library",
         "server-canonical"
+      ]
+    },
+    {
+      "id": "pack",
+      "name": "冻结包按帧复查",
+      "entry": "GET /api/library/:id/pack[/:frame]",
+      "success": "按帧号直接定位并返回单帧，整包可下载且支持字节范围",
+      "failure": "未知版本或帧号返回 404；包内容不匹配返回 409",
+      "verification": "node tools/workflow.mjs pack",
+      "steps": [
+        "从 GET /api/library/:id/pack[/:frame] 提交或读取数据",
+        "按帧号直接定位并返回单帧，整包可下载且支持字节范围"
+      ],
+      "module_ids": [
+        "product-pack",
+        "product-index",
+        "server-router",
+        "server-library"
       ]
     }
   ],

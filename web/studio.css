@@ -5,3 +5,8 @@
 .frame-strip [data-kind=active]{background:#b57742}.frame-strip [data-kind=event]{background:#e6ba69}
 .frame-strip [data-current=true]{background:#8ed3ca;outline:1px solid #d0ede4;outline-offset:-1px}
 .transport button{width:44px}
+.pack-bar{display:flex;gap:6px;margin-bottom:10px}
+.pack-bar input{width:64px;min-height:30px;padding:3px 6px}
+.pack-bar button{min-height:30px;padding:3px 9px}
+.pack-canvas{width:100%;display:block;background:#161b1e;border-radius:4px;aspect-ratio:275/220}
+.pack-line{margin-top:4px;font-size:12px;color:var(--muted);overflow-wrap:anywhere}

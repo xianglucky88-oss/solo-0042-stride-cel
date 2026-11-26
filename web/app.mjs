@@ -4,15 +4,20 @@ import { mountFields } from './fields.mjs';
 import { parseDocument, readFile, updateDocument } from './documents.mjs';
 import { refreshVersions } from './versions.mjs';
 import { fields, present, mountImport } from './surface.mjs';
+import { mountPackReview } from './pack-review.mjs';
 
 const editor=$('document'), status=$('status'), stage=$('stage');
 const actions=['demo','freeze','render','import'].map($);
 let metadata,busy=false,dispose,url;
+const review=mountPackReview($('pack-review'));
+const deepLink=new URLSearchParams(location.search);
+const deepPack=deepLink.get('pack'), deepFrame=deepLink.has('frame')?Number(deepLink.get('frame')):null;
 
 function note(message,error=false) { status.value=message; status.dataset.error=String(error); }
 
 function dirty() {
   $('download').hidden=true;
+  review.close();
   note('工作文档已变更 · 校样待更新');
 }
 
@@ -52,7 +57,7 @@ function showDownload(id) {
 }
 
 async function preview(document) {
-  $('download').hidden=true; note('正在生成校样…');
+  $('download').hidden=true; review.close(); note('正在生成校样…');
   const {summary,base64}=await post('/api/preview',document);
   await display(document,summary,decode(base64,metadata.asset));
   note('校样已更新');
@@ -64,12 +69,14 @@ async function loadDemo() {
   await preview(result.document);
 }
 
+async function openVersion(id,frame=null) {
+  const [record,blob]=await Promise.all([get(`/api/library/${id}`),artifact(id)]);
+  await display(record.document,record.summary,blob);
+  showDownload(id); review.open(id,record,frame); note(`冻结版本 ${id.slice(0,12)}`);
+}
+
 async function listVersions() {
-  await refreshVersions($('versions'),id=>task(async()=>{
-    const [record,blob]=await Promise.all([get(`/api/library/${id}`),artifact(id)]);
-    await display(record.document,record.summary,blob);
-    showDownload(id); note(`冻结版本 ${id.slice(0,12)}`);
-  }));
+  await refreshVersions($('versions'),id=>task(()=>openVersion(id)));
 }
 
 $('demo').onclick=()=>task(loadDemo);
@@ -77,9 +84,8 @@ $('render').onclick=()=>task(()=>preview(parseDocument(editor.value)));
 $('freeze').onclick=()=>task(async()=>{
   note('正在冻结…');
   const saved=await post('/api/library',parseDocument(editor.value));
-  const [record,blob]=await Promise.all([get(`/api/library/${saved.id}`),artifact(saved.id)]);
-  await display(record.document,saved.summary,blob);
-  showDownload(saved.id); await listVersions(); note(`${saved.created?'已冻结':'已复用'} ${saved.id.slice(0,12)}`);
+  await openVersion(saved.id);
+  await listVersions(); note(`${saved.created?'已冻结':'已复用'} ${saved.id.slice(0,12)}`);
 });
 $('import').onclick=()=>$('file').click();
 $('file').onchange=()=>task(async()=>{
@@ -94,3 +100,4 @@ editor.onchange=()=>{
 mountImport?.($('editor-extras'),()=>parseDocument(editor.value),document=>{setDocument(document);dirty();},message=>note(message,true));
 $('inspection').append(el('p','等待校样','muted'));
 await task(async()=>{await loadDemo();await listVersions();});
+if(deepPack && /^[a-f0-9]{64}$/.test(deepPack)) await task(()=>openVersion(deepPack,deepFrame));

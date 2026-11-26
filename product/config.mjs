@@ -6,5 +6,7 @@ export const metadata = Object.freeze({
   "accent": "#f3b65c",
   "asset": "application/json",
   "suffix": "json",
+  "packAsset": "application/octet-stream",
+  "packSuffix": "celpack",
   "version": 1
 });

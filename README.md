@@ -19,6 +19,8 @@ npm start
 可以导入 JSON，或者在「源文档」区域编辑。获取可导入样例：`curl -s http://127.0.0.1:8741/api/demo | node -e 'process.stdin.on("data",c=>s+=c).on("end",()=>console.log(JSON.stringify(JSON.parse(s).document,null,2)));let s=""'`。
 更新校样只计算不落盘；冻结会写入版本库，下载原始 `.json` 资产。可在「冻结版本」中复取已保存版本。
 
+冻结同时签发轻量冻结包 `.celpack`：自带帧索引的二进制帧表，与同稿 JSON 逐帧一致，体积不超过其一半。在「冻结包帧复查」中输入帧号（从 0 起）即可直接读取该帧，或打开 `/?pack=<版本标识>&frame=<帧号>` 深链；`GET /api/library/:id/pack` 下载整包（支持字节范围），`GET /api/library/:id/pack/:frame` 只取单帧。
+
 ## 检查
 
 `npm run check` 检查所有 JavaScript 模块语法，`npm run demo` 通过本机 HTTP 服务演练核心产物。完整测试套件暂缓；[项目规格](PROJECT_SPEC.md)列出全部生产工作流检查和输入边界。

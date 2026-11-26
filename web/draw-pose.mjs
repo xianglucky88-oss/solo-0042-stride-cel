@@ -1,3 +1,17 @@
+export function figure(ctx,arm,facing) {
+  const direction=facing==='right'?1:-1;
+  function stroke(points,color,width){
+    ctx.beginPath();points.forEach(([a,b],i)=>ctx[i?'lineTo':'moveTo'](a,b));
+    ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.stroke();
+  }
+  stroke([[-12,0],[-8,-13],[0,-24],[13,-8],[21*direction,0]],'#7ba9aa',6);
+  stroke([[0,-25],[0,-48]],'#afd4ca',12);
+  ctx.fillStyle='#e9f1df';ctx.beginPath();ctx.arc(4*direction,-60,10,0,2*Math.PI);ctx.fill();
+  ctx.fillStyle='#182525';ctx.fillRect(6*direction-1,-62,4,3);
+  const angle=arm*Math.PI/180;
+  stroke([[0,-46],[Math.sin(angle)*32,-46-Math.cos(angle)*32]],'#f5c477',7);
+}
+
 export function draw(canvas,sheet,index) {
   const ctx=canvas.getContext('2d'),{width:w,height:h}=canvas;
   const current=sheet.frames[index], {x,y,arm}=current.pose;
@@ -20,17 +34,7 @@ export function draw(canvas,sheet,index) {
     ctx.strokeRect(xx(box.x),yy(box.y),box.w*scale,box.h*scale);
   }
   ctx.save();ctx.translate(xx(x),yy(y));ctx.scale(scale,scale);
-  const facing=sheet.facing==='right'?1:-1;
-  function stroke(points,color,width){
-    ctx.beginPath();points.forEach(([a,b],i)=>ctx[i?'lineTo':'moveTo'](a,b));
-    ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.stroke();
-  }
-  stroke([[-12,0],[-8,-13],[0,-24],[13,-8],[21*facing,0]],'#7ba9aa',6);
-  stroke([[0,-25],[0,-48]],'#afd4ca',12);
-  ctx.fillStyle='#e9f1df';ctx.beginPath();ctx.arc(4*facing,-60,10,0,2*Math.PI);ctx.fill();
-  ctx.fillStyle='#182525';ctx.fillRect(6*facing-1,-62,4,3);
-  const angle=arm*Math.PI/180;
-  stroke([[0,-46],[Math.sin(angle)*32,-46-Math.cos(angle)*32]],'#f5c477',7);
+  figure(ctx,arm,sheet.facing);
   ctx.restore();
   ctx.fillStyle='#e1d7bc';ctx.font='15px monospace';ctx.fillText(`${sheet.facing.toUpperCase()} / ${sheet.fps} FPS`,18,27);
 }

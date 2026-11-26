@@ -12,6 +12,7 @@
 - `windows` 的 `from,to` 使用 `[from,to)`，按帧采样点判生效；场景里没取到的区保留在 `unsampled`。`events` 按包含源时间的帧区间投递一次，保留偏移并按时间与 ID 排序。
 - `loop` 仅控制接缝判断和预览回放，成品不额外插入终点帧。忽略水平根位移，垂向差 ≤1 px 且最短角度差 ≤2° 为接缝通过。`cycleTravel` 始终导出。
 - 产物为含 `format: stride-cel/1` 的 JSON，带采样姿态、作用区、事件和循环摘要。页面可逐帧检查；画布不是引擎运行时。
+- 冻结时同时签发轻量冻结包（`.celpack`）：自带帧索引的二进制帧表，凭帧号读包头、字符串表和一条索引即可定位并解出该帧，不必读完整个包或顺序解码此前所有帧，也不回源草稿重算。数值按 float64 存储，与同稿、同帧率、同朝向的 JSON 逐帧完全一致（负坐标不变号、空列表仍为空、同帧事件保留原顺序与帧内偏移）。
 
 ## 工作流
 
@@ -27,6 +28,7 @@
 | 下载版本产物 | `GET /api/library/:id/asset` | 返回冻结资产原始字节、正确媒体类型和文件名 | 不存在的资产返回 404 | `node tools/workflow.mjs download` |
 | 重启后复取 | `GET /api/library 与 GET /api/library/:id` | 恢复已有规范文档及成品校样摘要 | 未知或无法读取的版本不会替换当前校样 | `node tools/workflow.mjs reopen` |
 | 完整性复核 | `GET /api/library/:id[/asset]` | 元数据与媒体字节读取前均核对内容摘要 | 磁盘内容不匹配时返回 409 | `node tools/workflow.mjs integrity` |
+| 冻结包按帧复查 | `GET /api/library/:id/pack[/:frame]` | 按帧号直接定位并返回单帧（从 0 编号），整包可下载且支持字节范围；服务端只按偏移读取，不整包读入再截帧 | 未知版本或帧号返回 404；包内容不匹配返回 409 | `node tools/workflow.mjs pack` |
 
 ## 代码职责
 
@@ -36,22 +38,23 @@
 | `product/interpolate.mjs` | 姿态帧表 |
 | `product/frame-clock.mjs` | 姿态帧表、作用区采样、事件投递 |
 | `product/compile.mjs` | 姿态帧表、左右朝向、作用区采样、事件投递、循环接缝 |
-| `product/index.mjs` | 姿态帧表、导入文档、冻结校样 |
+| `product/pack.mjs` | 冻结包按帧复查 |
+| `product/index.mjs` | 姿态帧表、导入文档、冻结校样、冻结包按帧复查 |
 | `product/orientation.mjs` | 左右朝向、循环接缝 |
 | `product/windows.mjs` | 左右朝向、作用区采样 |
 | `product/dispatch.mjs` | 事件投递 |
 | `product/continuity.mjs` | 循环接缝 |
-| `server/router.mjs` | 导入文档、冻结校样、下载版本产物、重启后复取、完整性复核 |
+| `server/router.mjs` | 导入文档、冻结校样、下载版本产物、重启后复取、完整性复核、冻结包按帧复查 |
 | `server/request-body.mjs` | 导入文档 |
-| `server/library.mjs` | 冻结校样、下载版本产物、重启后复取、完整性复核 |
+| `server/library.mjs` | 冻结校样、下载版本产物、重启后复取、完整性复核、冻结包按帧复查 |
 | `server/canonical.mjs` | 冻结校样、下载版本产物、重启后复取、完整性复核 |
 | `server/atomic-write.mjs` | 冻结校样 |
 | `server/environment.mjs` | 重启后复取 |
 
-`web/app.mjs`协调编辑与预览生命周期；`web/surface.mjs`装配本产品校样组件。HTML、CSS、DOM、Canvas 或 HTML Audio 均为原生，无前端框架。
+`web/app.mjs`协调编辑与预览生命周期；`web/surface.mjs`装配本产品校样组件；`web/pack-review.mjs`凭冻结链接与帧号复查单帧，迟到的旧响应不覆盖最后选中的帧。HTML、CSS、DOM、Canvas 或 HTML Audio 均为原生，无前端框架。
 
 ## 存储和验证边界
 
-请求 JSON 最多 6 MiB。预览不持久化。冻结摘要绑定规则版本、规范文档、摘要指标和导出字节。单个文件通过同目录临时文件和排他硬链接发布，同内容重复提交复用原版本。复取会校验内容摘要；最近版本列表只显示最新 20 个。临时文件与最终目录需要位于支持硬链接的本机文件系统上。本应用不提供跨机器同步、账号权限或面向网络的部署。
+请求 JSON 最多 6 MiB。预览不持久化。冻结摘要绑定规则版本、规范文档、摘要指标、冻结包摘要和导出字节；冻结包以 `<版本标识>.celpack` 与版本记录同目录内容寻址存储，复取与下载前核对摘要，按帧读取只按文件偏移取所需字节。单个文件通过同目录临时文件和排他硬链接发布，同内容重复提交复用原版本。复取会校验内容摘要；最近版本列表只显示最新 20 个。临时文件与最终目录需要位于支持硬链接的本机文件系统上。本应用不提供跨机器同步、账号权限或面向网络的部署。
 
 完整自动化测试套件暂缓。`.project-runtime.json` 中的工作流命令从真实路由操作临时工作目录，不改变用户版本库。
