@@ -11,6 +11,8 @@
 - 输出采样为 `i × 1000 / fps < duration`，各分量线性插值。`facing:left` 取负根 X、手臂角度和局部矩形右边作为新左边。坐标为 px，Y 向下。
 - `windows` 的 `from,to` 使用 `[from,to)`，按帧采样点判生效；场景里没取到的区保留在 `unsampled`。`events` 按包含源时间的帧区间投递一次，保留偏移并按时间与 ID 排序。
 - `loop` 仅控制接缝判断和预览回放，成品不额外插入终点帧。忽略水平根位移，垂向差 ≤1 px 且最短角度差 ≤2° 为接缝通过。`cycleTravel` 始终导出。
+- `holds` 在结束前的不同动作刻度停住给定时长，停顿期间根位置、姿态与作用区保持该刻度。帧表仍按游戏时钟采样，每帧标注动作刻度 `at`；实际时长为 `duration` 加停顿总和，不足整帧的最后一帧不另添终点帧。
+- `events` 的 `clock` 约定跟动作（`action`，缺省）或在指定游戏时刻（`game`）触发；落在停顿刻度的动作事件到恢复才发。每个事件按实际触发时刻归入半开帧区间投递一次，同帧按实际时刻、同刻按标识排序；产物记录原时钟 `clock`、原时刻 `time` 与帧内等待 `offset`。未安排停顿也未指定时钟的草稿产物不变。
 - 产物为含 `format: stride-cel/1` 的 JSON，带采样姿态、作用区、事件和循环摘要。页面可逐帧检查；画布不是引擎运行时。
 
 ## 工作流
@@ -22,6 +24,7 @@
 | 作用区采样 | `POST /api/preview 的 windows` | 仅在取样时刻落于半开范围时显示作用区，并列未采样 ID | 非正长度作用窗拒绝 | `node tools/workflow.mjs windows` |
 | 事件投递 | `POST /api/preview 的 events` | 事件按所在帧区间投递一次并保留源偏移 | 结束端点上的事件被拒绝 | `node tools/workflow.mjs events` |
 | 循环接缝 | `POST /api/preview 的 loop` | 分别报告角度差、垂向跳变与周期根位移 | 非循环不判断；跳变超阈值在产物中报告 | `node tools/workflow.mjs seam` |
+| 停顿与事件时钟 | `POST /api/preview 的 holds 与 events.clock` | 帧表按游戏时钟采样并标注动作刻度；动作事件在停顿恢复时投递，游戏事件按原时刻投递 | 停顿刻度重复或越界、事件时钟未知、事件越过实际结束均拒绝 | `node tools/workflow.mjs holds` |
 | 导入文档 | `POST /api/preview` | 规范输入进入校样计算 | 非法 UTF-8、JSON 或字段直接拒绝；不覆盖已有冻结资产 | `node tools/workflow.mjs import` |
 | 冻结校样 | `POST /api/library` | 相同规范输入与产物复用同一摘要；并行提交只创建一次 | 无法规范化的草稿不会签发 | `node tools/workflow.mjs freeze` |
 | 下载版本产物 | `GET /api/library/:id/asset` | 返回冻结资产原始字节、正确媒体类型和文件名 | 不存在的资产返回 404 | `node tools/workflow.mjs download` |
@@ -32,14 +35,15 @@
 
 | 模块 | 参与的生产工作流 |
 | --- | --- |
-| `product/document.mjs` | 姿态帧表、左右朝向、作用区采样、事件投递、循环接缝、导入文档 |
+| `product/document.mjs` | 姿态帧表、左右朝向、作用区采样、事件投递、循环接缝、导入文档、停顿与事件时钟 |
 | `product/interpolate.mjs` | 姿态帧表 |
 | `product/frame-clock.mjs` | 姿态帧表、作用区采样、事件投递 |
-| `product/compile.mjs` | 姿态帧表、左右朝向、作用区采样、事件投递、循环接缝 |
+| `product/holds.mjs` | 停顿与事件时钟 |
+| `product/compile.mjs` | 姿态帧表、左右朝向、作用区采样、事件投递、循环接缝、停顿与事件时钟 |
 | `product/index.mjs` | 姿态帧表、导入文档、冻结校样 |
 | `product/orientation.mjs` | 左右朝向、循环接缝 |
-| `product/windows.mjs` | 左右朝向、作用区采样 |
-| `product/dispatch.mjs` | 事件投递 |
+| `product/windows.mjs` | 左右朝向、作用区采样、停顿与事件时钟 |
+| `product/dispatch.mjs` | 事件投递、停顿与事件时钟 |
 | `product/continuity.mjs` | 循环接缝 |
 | `server/router.mjs` | 导入文档、冻结校样、下载版本产物、重启后复取、完整性复核 |
 | `server/request-body.mjs` | 导入文档 |

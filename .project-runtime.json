@@ -30,6 +30,10 @@
       "command": "node tools/workflow.mjs seam"
     },
     {
+      "workflow_id": "holds",
+      "command": "node tools/workflow.mjs holds"
+    },
+    {
       "workflow_id": "import",
       "command": "node tools/workflow.mjs import"
     },

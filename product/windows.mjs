@@ -1,9 +1,9 @@
 import { worldBox } from './orientation.mjs';
 
-export function activeWindows(windows, index, fps, pose, facing) {
+export function activeWindows(windows, tick, fps, pose, facing) {
   // Compare integers at the boundary rather than rounding a frame time.
-  const numerator = index * 1000;
-  return windows.filter(row => row.from*fps <= numerator && numerator < row.to*fps)
+  // `tick` is the frame's action tick scaled by fps, so holds freeze it.
+  return windows.filter(row => row.from*fps <= tick && tick < row.to*fps)
     .map(row => worldBox(row, pose, facing));
 }
 

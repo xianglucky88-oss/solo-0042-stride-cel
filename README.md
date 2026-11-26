@@ -16,6 +16,8 @@ npm start
 
 建议先切到 20 FPS 并拖动时间线，比较同一作用区的采样边界与朝向切换。
 
+草稿可用 `holds` 在动作刻度上安排命中停顿：停顿期间姿态与作用区停在该刻度，游戏时钟照走，帧表为每帧标注动作刻度。事件用 `clock` 区分跟动作（缺省）还是指定游戏时刻；落在停顿刻度上的动作事件到恢复才发。
+
 可以导入 JSON，或者在「源文档」区域编辑。获取可导入样例：`curl -s http://127.0.0.1:8741/api/demo | node -e 'process.stdin.on("data",c=>s+=c).on("end",()=>console.log(JSON.stringify(JSON.parse(s).document,null,2)));let s=""'`。
 更新校样只计算不落盘；冻结会写入版本库，下载原始 `.json` 资产。可在「冻结版本」中复取已保存版本。
 

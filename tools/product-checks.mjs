@@ -41,5 +41,43 @@ export function checks({document,preview,rejected}) {
       assert.equal(sheet(await preview({...document,keys})).continuity.loopClean,false);
       assert.equal(sheet(await preview({...document,keys,loop:false})).continuity.loopClean,null);
     },
+    holds:async()=>{
+      const doc={ id:'hold-check', duration:450, fps:10, facing:'right', loop:false,
+        keys:[{time:0,x:0,y:0,arm:0},{time:450,x:90,y:0,arm:90}],
+        windows:[{id:'hit',from:150,to:170,x:0,y:0,w:10,h:10}],
+        events:[{id:'trail',time:160,kind:'effect'},
+          {id:'impact',time:150,kind:'impact',clock:'action'},
+          {id:'spark',time:200,kind:'effect',clock:'game'},
+          {id:'echo',time:280,kind:'step',clock:'game'}],
+        holds:[{at:150,duration:130}] };
+      const result=sheet(await preview(doc));
+      assert.equal(result.frames.length,6);
+      assert.deepEqual(result.holds,[{at:150,duration:130}]);
+      const frame=result.frames[2];
+      assert.equal(frame.time,200);
+      assert.equal(frame.at,150);
+      assert.equal(frame.pose.x,30);
+      assert.equal(frame.boxes[0]?.id,'hit');
+      assert.deepEqual(frame.events.map(evt=>evt.id),['spark','echo','impact','trail']);
+      assert.deepEqual(frame.events.map(evt=>evt.offset),[0,80,80,90]);
+      assert.deepEqual(frame.events.map(evt=>evt.clock),['game','game','action','action']);
+      assert.equal(frame.events[2].time,150);
+      assert.equal(result.frames[3].at,170);
+      assert.equal(result.frames[3].boxes.length,0);
+      assert.deepEqual(result.frames.flatMap(row=>row.events.map(evt=>evt.id)).sort(),['echo','impact','spark','trail']);
+      const tail=sheet(await preview({...doc,events:[{id:'last',time:449,kind:'step',clock:'action'}]}));
+      assert.equal(tail.frames.length,6);
+      assert.equal(tail.frames[5].events[0]?.id,'last');
+      assert.equal(tail.frames[5].events[0]?.offset,79);
+      const plain=sheet(await preview());
+      assert.equal(plain.holds,undefined);
+      assert.equal(plain.frames[2].at,undefined);
+      assert.equal(plain.frames[3].events[0]?.clock,undefined);
+      await rejected({...doc,holds:[{at:450,duration:10}]});
+      await rejected({...doc,holds:[{at:100,duration:10},{at:100,duration:20}]});
+      await rejected({...doc,events:[{id:'x',time:100,kind:'step',clock:'flash'}]});
+      await rejected({...doc,events:[{id:'x',time:580,kind:'step',clock:'game'}]});
+      await rejected({...doc,events:[{id:'x',time:450,kind:'step',clock:'action'}]});
+    },
   };
 }
