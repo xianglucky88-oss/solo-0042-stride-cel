@@ -22,6 +22,10 @@
       "command": "node tools/workflow.mjs windows"
     },
     {
+      "workflow_id": "adjust",
+      "command": "node tools/workflow.mjs adjust"
+    },
+    {
       "workflow_id": "events",
       "command": "node tools/workflow.mjs events"
     },

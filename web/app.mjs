@@ -7,7 +7,7 @@ import { fields, present, mountImport } from './surface.mjs';
 
 const editor=$('document'), status=$('status'), stage=$('stage');
 const actions=['demo','freeze','render','import'].map($);
-let metadata,busy=false,dispose,url;
+let metadata,busy=false,dispose,url,viewState={};
 
 function note(message,error=false) { status.value=message; status.dataset.error=String(error); }
 
@@ -37,18 +37,42 @@ async function task(fn) {
   }
 }
 
-async function display(document,summary,blob) {
+async function display(document,summary,blob,keepState) {
   dispose?.();
   if(url) URL.revokeObjectURL(url);
   url=URL.createObjectURL(blob);
   setDocument(document);
   stage.replaceChildren(); $('inspection').replaceChildren();
-  dispose=await present({stage,inspect:$('inspection'),summary,document,blob,url});
+  const state=keepState?viewState:{};
+  dispose=await present({stage,inspect:$('inspection'),summary,document,blob,url,state,
+    onState:next=>{viewState=next;},
+    onAdjust:adjustment=>applyAdjustment(adjustment),
+  });
 }
 
 function showDownload(id) {
   $('download').href=`/api/library/${id}/asset`;
   $('download').hidden=false;
+}
+
+// Persist one span-scoped nudge on the draft's own `adjustments` list and go
+// through the regular preview entry so the change is as reproducible as any
+// other edit (update proof, freeze/download, reopen all see it).
+async function applyAdjustment(adjustment) {
+  try {
+    // Never drop a committed drag because another task was momentarily busy.
+    while(busy) await new Promise(resolve=>setTimeout(resolve,80));
+    const document=parseDocument(editor.value);
+    const adjustments=Array.isArray(document.adjustments)?document.adjustments:[];
+    const {from,to}=adjustment;
+    const next={...document,adjustments:[...adjustments,{window:adjustment.window,from,to,dx:adjustment.dx,dy:adjustment.dy}]};
+    await task(async()=>{
+      $('download').hidden=true; note('正在更新校样…');
+      const {summary,base64}=await post('/api/preview',next);
+      await display(next,summary,decode(base64,metadata.asset),true);
+      note(`已移动作用区 ${adjustment.window} · ${adjustment.dx.toFixed(3)}, ${adjustment.dy.toFixed(3)} px`);
+    });
+  } catch(error) { note(error.message,true); }
 }
 
 async function preview(document) {

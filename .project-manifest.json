@@ -36,6 +36,7 @@
         "姿态帧表",
         "左右朝向",
         "作用区采样",
+        "时段位移",
         "事件投递",
         "循环接缝"
       ]
@@ -62,7 +63,15 @@
       "path": "product/windows.mjs",
       "role": [
         "左右朝向",
-        "作用区采样"
+        "作用区采样",
+        "时段位移"
+      ]
+    },
+    {
+      "id": "product-adjustments",
+      "path": "product/adjustments.mjs",
+      "role": [
+        "时段位移"
       ]
     },
     {
@@ -185,7 +194,26 @@
         "product-document",
         "product-frame-clock",
         "product-windows",
-        "product-compile"
+        "product-compile",
+        "product-adjustments"
+      ]
+    },
+    {
+      "id": "adjust",
+      "name": "时段位移",
+      "entry": "POST /api/preview 的 adjustments",
+      "success": "暂停后圈定连续帧、拖动的位移按动作时间作用于该区，换帧率/朝向仍成立，重叠时段叠加",
+      "failure": "未知作用区或非正时段拒绝",
+      "verification": "node tools/workflow.mjs adjust",
+      "steps": [
+        "从 POST /api/preview 的 adjustments 提交或读取数据",
+        "按所选时段的动作时间把相对角色根的位移叠加到该作用区"
+      ],
+      "module_ids": [
+        "product-document",
+        "product-compile",
+        "product-windows",
+        "product-adjustments"
       ]
     },
     {
