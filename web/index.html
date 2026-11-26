@@ -17,6 +17,7 @@
       <button id="import" type="button" title="导入工作文档">导入 JSON</button><input id="file" type="file" accept=".json,application/json" hidden>
       <button id="render" type="button">更新校样</button>
       <button id="freeze" class="accent" type="button">冻结版本</button>
+      <button id="freeze-suite" class="accent" type="button">成套冻结</button>
     </div>
   </header>
   <main>
@@ -34,6 +35,7 @@
         <div id="controls"></div>
         <div id="inspection"></div>
         <details class="details"><summary>源文档</summary><div id="editor-extras"></div><textarea id="document" aria-label="JSON 工作文档" wrap="off" spellcheck="false"></textarea></details>
+        <details class="details" open><summary>成套冻结</summary><div id="suite-panel"></div><div id="suite-list"></div><div id="suite-detail"></div></details>
         <details class="details" open><summary>冻结版本</summary><div id="versions"></div></details>
       </aside>
     </div>

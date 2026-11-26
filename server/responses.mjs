@@ -17,7 +17,9 @@ export function json(res, value, status = 200) {
 
 export function respondError(res, error) {
   if (res.headersSent || res.destroyed) return res.destroy();
-  if (error instanceof InputError) return json(res, { error: error.message }, error.status);
+  if (error instanceof InputError) {
+    return json(res, error.details ? { error: error.message, ...error.details } : { error: error.message }, error.status);
+  }
   console.error(error);
   json(res, { error: '服务未能完成该操作' }, 500);
 }

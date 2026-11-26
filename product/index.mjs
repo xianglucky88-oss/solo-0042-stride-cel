@@ -2,6 +2,7 @@ import { compile } from './compile.mjs';
 export { metadata } from './config.mjs';
 export { normalize } from './document.mjs';
 export { demo } from './demo.mjs';
+export { buildSuite } from './suite.mjs';
 
 export function render(document) {
   const sheet = compile(document);

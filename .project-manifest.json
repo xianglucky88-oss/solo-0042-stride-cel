@@ -50,6 +50,14 @@
       ]
     },
     {
+      "id": "product-suite",
+      "path": "product/suite.mjs",
+      "role": [
+        "成套冻结",
+        "成套缺项拦截"
+      ]
+    },
+    {
       "id": "product-orientation",
       "path": "product/orientation.mjs",
       "role": [
@@ -105,6 +113,16 @@
         "下载版本产物",
         "重启后复取",
         "完整性复核"
+      ]
+    },
+    {
+      "id": "server-suite-library",
+      "path": "server/suite-library.mjs",
+      "role": [
+        "成套冻结",
+        "套件下载",
+        "套件重启复取",
+        "套件完整性复核"
       ]
     },
     {
@@ -259,6 +277,79 @@
         "server-library",
         "server-canonical",
         "server-atomic-write"
+      ]
+    },
+    {
+      "id": "suite",
+      "name": "成套冻结",
+      "entry": "POST /api/suites",
+      "success": "同一份草稿按两档帧率与两朝向冻结四份，每份与单独冻结字节一致；顺序颠倒或并行提交复用同一套件版本号",
+      "failure": "草稿或帧率非法时拒绝且不写盘",
+      "verification": "node tools/workflow.mjs suite",
+      "steps": [
+        "规范化草稿并按两档帧率、两朝向渲染四份成品",
+        "按规范化套件字节内容寻址并原子发布"
+      ],
+      "module_ids": [
+        "server-router",
+        "product-suite",
+        "product-index",
+        "server-suite-library",
+        "server-canonical",
+        "server-atomic-write"
+      ]
+    },
+    {
+      "id": "suite-missing",
+      "name": "成套缺项拦截",
+      "entry": "POST /api/suites 的 require",
+      "success": "必需作用区在四份成品均可见时签发，一个版本号可查四份并各自下载",
+      "failure": "按档与朝向列出缺失作用区并整体拒绝，套件不可查不可下载，草稿仍可预览",
+      "verification": "node tools/workflow.mjs suite-missing",
+      "steps": [
+        "核对每个必需作用区在四份成品的未采样列表",
+        "存在缺项时在写盘前抛出，无半套残留"
+      ],
+      "module_ids": [
+        "product-suite",
+        "product-windows",
+        "server-router",
+        "server-suite-library"
+      ]
+    },
+    {
+      "id": "suite-reopen",
+      "name": "套件重启复取",
+      "entry": "GET /api/suites 与 GET /api/suites/:id",
+      "success": "重启后恢复套件与四份原字节，单独冻结链接照常可用",
+      "failure": "未知套件返回 404",
+      "verification": "node tools/workflow.mjs suite-reopen",
+      "steps": [
+        "重启后从磁盘读取套件记录",
+        "逐份核对资产字节与冻结时一致"
+      ],
+      "module_ids": [
+        "server-router",
+        "server-suite-library",
+        "server-canonical",
+        "server-environment"
+      ]
+    },
+    {
+      "id": "suite-integrity",
+      "name": "套件完整性复核",
+      "entry": "GET /api/suites/:id[/:fps-:facing/asset]",
+      "success": "读取套件记录与资产前核对内容摘要",
+      "failure": "磁盘内容不匹配时返回 409",
+      "verification": "node tools/workflow.mjs suite-integrity",
+      "steps": [
+        "读取套件记录并核对摘要",
+        "摘要不符时对规格与资产请求均返回 409"
+      ],
+      "module_ids": [
+        "server-router",
+        "server-suite-library",
+        "server-canonical"
       ]
     },
     {

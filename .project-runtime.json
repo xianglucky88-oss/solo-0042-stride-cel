@@ -38,6 +38,22 @@
       "command": "node tools/workflow.mjs freeze"
     },
     {
+      "workflow_id": "suite",
+      "command": "node tools/workflow.mjs suite"
+    },
+    {
+      "workflow_id": "suite-missing",
+      "command": "node tools/workflow.mjs suite-missing"
+    },
+    {
+      "workflow_id": "suite-reopen",
+      "command": "node tools/workflow.mjs suite-reopen"
+    },
+    {
+      "workflow_id": "suite-integrity",
+      "command": "node tools/workflow.mjs suite-integrity"
+    },
+    {
       "workflow_id": "download",
       "command": "node tools/workflow.mjs download"
     },

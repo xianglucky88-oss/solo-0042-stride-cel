@@ -4,11 +4,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { start } from '../server.mjs';
 import { checks } from './product-checks.mjs';
+import { suiteChecks } from './suite-checks.mjs';
 
 const storage=await mkdtemp(join(tmpdir(),'media-workflow-'));
 let server;
 async function open() { server=await start({port:0,storage}); }
 async function close() { if (server?.listening) await new Promise(resolve=>server.close(resolve)); }
+async function restart() { await close(); await open(); }
 function get(path,options) { return fetch(`http://127.0.0.1:${server.address().port}${path}`,options); }
 const send=(path,document)=>get(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(document)});
 const read=async(response,status=200)=>{
@@ -60,6 +62,7 @@ try {
       await read(await get(`/api/library/${id}/asset`),409);
     },
     ...checks({document, preview, rejected}),
+    ...suiteChecks({send, get, read, storage, restart}),
   };
   const name=process.argv[2]??'proof';
   assert.ok(Object.hasOwn(actions,name),`Unknown workflow: ${name}`);

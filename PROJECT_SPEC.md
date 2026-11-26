@@ -24,6 +24,11 @@
 | 循环接缝 | `POST /api/preview 的 loop` | 分别报告角度差、垂向跳变与周期根位移 | 非循环不判断；跳变超阈值在产物中报告 | `node tools/workflow.mjs seam` |
 | 导入文档 | `POST /api/preview` | 规范输入进入校样计算 | 非法 UTF-8、JSON 或字段直接拒绝；不覆盖已有冻结资产 | `node tools/workflow.mjs import` |
 | 冻结校样 | `POST /api/library` | 相同规范输入与产物复用同一摘要；并行提交只创建一次 | 无法规范化的草稿不会签发 | `node tools/workflow.mjs freeze` |
+| 成套冻结 | `POST /api/suites` | 同一份草稿按两档不同合法帧率、左右两朝向一次性冻结四份；每份成品与同原稿、同帧率、同朝向单独冻结的字节一致 | 必需作用区在任一成品未采样时按档与朝向列出缺项并整体拒绝，不写任何套件；草稿仍可预览 | `node tools/workflow.mjs suite` |
+| 成套缺项拦截 | `POST /api/suites 的 require` | 必需区在全部四份可见才签发，一个固定版本号可查四份规格并各自下载 | 例如 40–75 ms 的作用区在 30 fps 可见、12 fps 两份不可见时，指出 12 fps 两朝向漏了该区，整套不可查不可下载；仅把关闭时间改到 90 ms 后四份均可下载 | `node tools/workflow.mjs suite-missing` |
+| 套件下载 | `GET /api/suites/:id/:fps-:facing/asset` | 按固定套件版本号下载指定帧率与朝向的原始帧表字节 | 套件或其中该成品不存在返回 404 | `node tools/workflow.mjs suite` |
+| 套件重启复取 | `GET /api/suites 与 GET /api/suites/:id` | 重启后恢复套件列表与四份规格，资产字节与冻结时一致，单独签出的冻结链接照常可用 | 未知或无法读取的套件返回 404/409 | `node tools/workflow.mjs suite-reopen` |
+| 套件完整性复核 | `GET /api/suites/:id[/:fps-:facing/asset]` | 读取套件记录前核对内容摘要 | 磁盘内容不匹配时返回 409 | `node tools/workflow.mjs suite-integrity` |
 | 下载版本产物 | `GET /api/library/:id/asset` | 返回冻结资产原始字节、正确媒体类型和文件名 | 不存在的资产返回 404 | `node tools/workflow.mjs download` |
 | 重启后复取 | `GET /api/library 与 GET /api/library/:id` | 恢复已有规范文档及成品校样摘要 | 未知或无法读取的版本不会替换当前校样 | `node tools/workflow.mjs reopen` |
 | 完整性复核 | `GET /api/library/:id[/asset]` | 元数据与媒体字节读取前均核对内容摘要 | 磁盘内容不匹配时返回 409 | `node tools/workflow.mjs integrity` |
@@ -37,11 +42,13 @@
 | `product/frame-clock.mjs` | 姿态帧表、作用区采样、事件投递 |
 | `product/compile.mjs` | 姿态帧表、左右朝向、作用区采样、事件投递、循环接缝 |
 | `product/index.mjs` | 姿态帧表、导入文档、冻结校样 |
+| `product/suite.mjs` | 成套冻结、成套缺项拦截 |
+| `server/suite-library.mjs` | 成套冻结、套件下载、套件重启复取、套件完整性复核 |
 | `product/orientation.mjs` | 左右朝向、循环接缝 |
 | `product/windows.mjs` | 左右朝向、作用区采样 |
 | `product/dispatch.mjs` | 事件投递 |
 | `product/continuity.mjs` | 循环接缝 |
-| `server/router.mjs` | 导入文档、冻结校样、下载版本产物、重启后复取、完整性复核 |
+| `server/router.mjs` | 导入文档、冻结校样、下载版本产物、重启后复取、完整性复核、成套冻结、套件下载 |
 | `server/request-body.mjs` | 导入文档 |
 | `server/library.mjs` | 冻结校样、下载版本产物、重启后复取、完整性复核 |
 | `server/canonical.mjs` | 冻结校样、下载版本产物、重启后复取、完整性复核 |
@@ -53,5 +60,7 @@
 ## 存储和验证边界
 
 请求 JSON 最多 6 MiB。预览不持久化。冻结摘要绑定规则版本、规范文档、摘要指标和导出字节。单个文件通过同目录临时文件和排他硬链接发布，同内容重复提交复用原版本。复取会校验内容摘要；最近版本列表只显示最新 20 个。临时文件与最终目录需要位于支持硬链接的本机文件系统上。本应用不提供跨机器同步、账号权限或面向网络的部署。
+
+成套冻结在一次请求内校验草稿并渲染四份成品（两档帧率 × 两朝向），套件记录与单份冻结一样按规范化字节做内容寻址：两档输入顺序颠倒、请求字段重排或两人同时提交同一交付内容都得到同一套件版本号。必需作用区缺项等任何校验失败都在写盘前抛出，因此失败不会留下可打开的半套，草稿仍可经预览接口校样。套件记录与单份资产同目录存放，以 `suite-` 前缀区分，同样经临时文件与排他硬链接原子发布；重启或随后修改草稿都不改变旧套件交付的四份原字节。
 
 完整自动化测试套件暂缓。`.project-runtime.json` 中的工作流命令从真实路由操作临时工作目录，不改变用户版本库。

@@ -3,10 +3,11 @@ import { artifact, decode, get, post } from './api.mjs';
 import { mountFields } from './fields.mjs';
 import { parseDocument, readFile, updateDocument } from './documents.mjs';
 import { refreshVersions } from './versions.mjs';
+import { mountSuitePanel, refreshSuites } from './suites.mjs';
 import { fields, present, mountImport } from './surface.mjs';
 
 const editor=$('document'), status=$('status'), stage=$('stage');
-const actions=['demo','freeze','render','import'].map($);
+const actions=['demo','freeze','render','import','freeze-suite'].map($);
 let metadata,busy=false,dispose,url;
 
 function note(message,error=false) { status.value=message; status.dataset.error=String(error); }
@@ -81,6 +82,16 @@ $('freeze').onclick=()=>task(async()=>{
   await display(record.document,saved.summary,blob);
   showDownload(saved.id); await listVersions(); note(`${saved.created?'已冻结':'已复用'} ${saved.id.slice(0,12)}`);
 });
+mountSuitePanel($('suite-panel'),{
+  current:()=>parseDocument(editor.value),
+  onFreeze:payload=>task(async()=>{
+    note('正在成套冻结…');
+    const saved=await post('/api/suites',payload);
+    await refreshSuites($('suite-list'));
+    note(`${saved.created?'已成套冻结':'已复用套件'} ${saved.id.slice(0,12)} · 四份成品可在下方下载`);
+  }),
+});
+async function listSuites(){ await refreshSuites($('suite-list')); }
 $('import').onclick=()=>$('file').click();
 $('file').onchange=()=>task(async()=>{
   const file=$('file').files[0]; $('file').value='';
@@ -93,4 +104,4 @@ editor.onchange=()=>{
 };
 mountImport?.($('editor-extras'),()=>parseDocument(editor.value),document=>{setDocument(document);dirty();},message=>note(message,true));
 $('inspection').append(el('p','等待校样','muted'));
-await task(async()=>{await loadDemo();await listVersions();});
+await task(async()=>{await loadDemo();await listVersions();await listSuites();});

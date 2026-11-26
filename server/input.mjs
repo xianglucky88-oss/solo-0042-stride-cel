@@ -1,7 +1,8 @@
 export class InputError extends Error {
-  constructor(message, status = 422) {
+  constructor(message, status = 422, details = null) {
     super(message);
     this.status = status;
+    this.details = details;
   }
 }
 

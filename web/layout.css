@@ -34,6 +34,13 @@ h4{font-size:13px;margin-bottom:8px}
 .field input,.field select{min-width:0;min-height:27px;padding:3px 6px;accent-color:var(--accent)}
 textarea{display:block;width:100%;min-height:160px;margin-top:10px;padding:8px;font:12px/1.5 ui-monospace,monospace;resize:vertical}
 .version{width:100%;text-align:left;margin-top:7px;display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.suite-detail{margin-top:10px}
+#suite-list{margin-top:10px}
+#suite-detail{margin-top:10px}
+.suite-submit{width:100%;margin-top:10px}
+.suite-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+.suite-row:last-child{border-bottom:none}
+.suite-row a{white-space:nowrap}
 .mono{font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-top:1px solid var(--line)}
 .metrics div{padding:10px 13px;min-width:0;border-right:1px solid var(--line)}
