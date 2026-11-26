@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
+import { travelChecks } from './travel-checks.mjs';
 
 const sheet=result=>JSON.parse(Buffer.from(result.base64,'base64'));
 
 export function checks({document,preview,rejected}) {
   return {
+    travel:async()=>travelChecks().travel({preview}),
     proof:async()=>{
       const compiled=sheet(await preview());
       assert.equal(compiled.frames.length,21);

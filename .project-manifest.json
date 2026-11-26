@@ -225,6 +225,23 @@
       ]
     },
     {
+      "id": "travel",
+      "name": "连续行进校样",
+      "entry": "POST /api/preview 的 loop（页面预览）",
+      "success": "每圈水平根位置接上前一圈实际终点，左向、后退与真实竖向跳变可见",
+      "failure": "非循环文档只提供单圈回放；下载保持一圈帧表",
+      "verification": "node tools/workflow.mjs travel",
+      "steps": [
+        "从 POST /api/preview 的 loop 提交或读取数据",
+        "按墙钟推进圈数，累加水平周期位移，并只绘制最近一圈的根轨迹"
+      ],
+      "module_ids": [
+        "product-orientation",
+        "product-continuity",
+        "product-compile"
+      ]
+    },
+    {
       "id": "import",
       "name": "导入文档",
       "entry": "POST /api/preview",
