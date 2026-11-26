@@ -41,5 +41,38 @@ export function checks({document,preview,rejected}) {
       assert.equal(sheet(await preview({...document,keys})).continuity.loopClean,false);
       assert.equal(sheet(await preview({...document,keys,loop:false})).continuity.loopClean,null);
     },
+    audible:async()=>{
+      const keys=[{time:0,x:-80,y:0,arm:0},{time:20,x:-40,y:10,arm:0},{time:70,x:40,y:10,arm:0},{time:100,x:-80,y:0,arm:0}];
+      const events=[{id:'left',kind:'step',time:20,sound:true},{id:'quiet',kind:'impact',time:50},{id:'right',kind:'step',time:70,sound:true}];
+      const doc={...document,duration:100,fps:10,windows:[],keys,events};
+      const locate=(result,id)=>result.frames.findIndex(frame=>frame.events.some(event=>event.id===id));
+      const find=(result,id)=>result.frames.flatMap(frame=>frame.events).find(event=>event.id===id);
+      const first=await preview(doc), right=sheet(first);
+      assert.equal(first.summary.audible,2);
+      // 10 FPS：两步记在同一帧里，帧归属与帧内偏移不变
+      assert.equal(locate(right,'left'),0);
+      assert.equal(locate(right,'right'),0);
+      assert.equal(find(right,'left').offset,20);
+      assert.equal(find(right,'right').offset,70);
+      // 世界坐标取脚步发生那一刻的根位置，帧间关键姿态计入
+      assert.deepEqual(find(right,'left').position,{x:-40,y:10});
+      assert.deepEqual(find(right,'right').position,{x:40,y:10});
+      // 未标记的事件不发声也不交付坐标
+      assert.equal(find(right,'quiet').sound,false);
+      assert.ok(!('position' in find(right,'quiet')));
+      // 换向后两声的左右对调
+      const mirrored=sheet(await preview({...doc,facing:'left'}));
+      assert.equal(find(mirrored,'left').position.x,40);
+      assert.equal(find(mirrored,'right').position.x,-40);
+      // 改帧率让两步不再同帧：发声时刻与落点不变
+      const finer=sheet(await preview({...doc,fps:20}));
+      assert.equal(locate(finer,'left'),0);
+      assert.equal(locate(finer,'right'),1);
+      assert.deepEqual(find(finer,'left').position,{x:-40,y:10});
+      assert.deepEqual(find(finer,'right').position,{x:40,y:10});
+      for(const result of [right,finer]) for(const frame of result.frames) for(const event of frame.events)
+        assert.ok(Math.abs(frame.time+event.offset-event.time)<1e-9);
+      await rejected({...doc,events:[{id:'bad',kind:'step',time:20,sound:'yes'}]});
+    },
   };
 }

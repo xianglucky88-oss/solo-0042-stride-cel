@@ -25,7 +25,9 @@ export function normalize(input) {
   }), '作用区');
   const events = unique(list(input.events, 0, 48, '事件').map(row => {
     object(row, '事件');
-    return { id: key(row.id), time: number(row.time,0,duration-1,'事件刻度',true), kind: choice(row.kind,['step','impact','effect'],'事件类型') };
+    const sound = row.sound ?? false;
+    requireThat(typeof sound === 'boolean', '事件发声标记必须是布尔值');
+    return { id: key(row.id), time: number(row.time,0,duration-1,'事件刻度',true), kind: choice(row.kind,['step','impact','effect'],'事件类型'), sound };
   }), '事件').sort((a,b) => a.time-b.time || a.id.localeCompare(b.id));
   requireThat(typeof input.loop === 'boolean', 'loop 必须是布尔值');
   return { id:key(input.id), duration, fps:number(input.fps,6,60,'帧率',true), facing:choice(input.facing,['left','right'],'朝向'), loop:input.loop, keys, windows, events };

@@ -14,12 +14,12 @@ export async function present({stage,inspect,summary,blob}) {
     const frame=sheet.frames[index], {continuity,unsampled}=summary;
     const seam=continuity.loopClean===null?'单次播放':continuity.loopClean?'通过':'首尾有跳变';
     const rows=[`作用区：${frame.boxes.map(box=>box.id).join('、')||'无'}`,
-      `事件：${frame.events.map(evt=>`${evt.id} +${evt.offset.toFixed(1)} ms`).join('、')||'无'}`,
+      `事件：${frame.events.map(evt=>evt.sound?`${evt.id} +${evt.offset.toFixed(1)} ms 🔊 (${evt.position.x.toFixed(1)}, ${evt.position.y.toFixed(1)})`:`${evt.id} +${evt.offset.toFixed(1)} ms`).join('、')||'无'}`,
       `循环接缝：${seam} · ${continuity.angularJump.toFixed(1)}°`,
       `周期位移：${continuity.cycleTravel.x.toFixed(1)}, ${continuity.cycleTravel.y.toFixed(1)} px`];
     if(unsampled.length) rows.push(`未采样作用区：${unsampled.join('、')}`);
     inspect.replaceChildren(el('h4',`帧 ${index} · ${frame.time.toFixed(1)} ms`,'mono'),checklist(rows));
   });
-  stage.append(metrics([['采样帧',summary.frames],['生效帧',summary.active],['事件',summary.events]]));
+  stage.append(metrics([['采样帧',summary.frames],['生效帧',summary.active],['事件',summary.events],['有声',summary.audible??0]]));
   return stop;
 }

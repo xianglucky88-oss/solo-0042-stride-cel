@@ -9,6 +9,7 @@
         "左右朝向",
         "作用区采样",
         "事件投递",
+        "有声脚步",
         "循环接缝",
         "导入文档"
       ]
@@ -37,6 +38,7 @@
         "左右朝向",
         "作用区采样",
         "事件投递",
+        "有声脚步",
         "循环接缝"
       ]
     },
@@ -45,6 +47,7 @@
       "path": "product/index.mjs",
       "role": [
         "姿态帧表",
+        "有声脚步",
         "导入文档",
         "冻结校样"
       ]
@@ -70,6 +73,13 @@
       "path": "product/dispatch.mjs",
       "role": [
         "事件投递"
+      ]
+    },
+    {
+      "id": "product-audible",
+      "path": "product/audible.mjs",
+      "role": [
+        "有声脚步"
       ]
     },
     {
@@ -204,6 +214,27 @@
         "product-frame-clock",
         "product-dispatch",
         "product-compile"
+      ]
+    },
+    {
+      "id": "audible",
+      "name": "有声脚步",
+      "entry": "POST /api/preview 的 events",
+      "success": "有声事件随原事件交付世界坐标，帧与帧内偏移不变",
+      "failure": "发声标记非布尔时拒绝",
+      "verification": "node tools/workflow.mjs audible",
+      "steps": [
+        "从 POST /api/preview 的 events 提交或读取数据",
+        "有声事件随原事件交付世界坐标，帧与帧内偏移不变"
+      ],
+      "module_ids": [
+        "product-document",
+        "product-interpolate",
+        "product-orientation",
+        "product-dispatch",
+        "product-audible",
+        "product-compile",
+        "product-index"
       ]
     },
     {

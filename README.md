@@ -16,6 +16,8 @@ npm start
 
 建议先切到 20 FPS 并拖动时间线，比较同一作用区的采样边界与朝向切换。
 
+事件可标记 `"sound": true`：有声脚步随冻结产物交付自己的世界坐标（取脚步发生那一刻的根位置）。点「🔊」从当前帧起有声试听一遍，世界 X=0 为听音中心，±40 px 之外保持单侧声道；拖动帧条本身不放声。
+
 可以导入 JSON，或者在「源文档」区域编辑。获取可导入样例：`curl -s http://127.0.0.1:8741/api/demo | node -e 'process.stdin.on("data",c=>s+=c).on("end",()=>console.log(JSON.stringify(JSON.parse(s).document,null,2)));let s=""'`。
 更新校样只计算不落盘；冻结会写入版本库，下载原始 `.json` 资产。可在「冻结版本」中复取已保存版本。
 

@@ -2,12 +2,13 @@ import { frameCount, frameTime } from './frame-clock.mjs';
 import { interpolate } from './interpolate.mjs';
 import { orientPose } from './orientation.mjs';
 import { schedule } from './dispatch.mjs';
+import { audible } from './audible.mjs';
 import { activeWindows, unsampled } from './windows.mjs';
 import { continuity } from './continuity.mjs';
 
 export function compile(document) {
   const { fps, duration, facing, keys, windows, events } = document;
-  const slots = schedule(events, fps);
+  const slots = schedule(audible(events, keys, facing), fps);
   const frames = Array.from({length:frameCount(duration,fps)}, (_,index) => {
     const time = frameTime(index,fps);
     const pose = orientPose(interpolate(keys,time),facing);

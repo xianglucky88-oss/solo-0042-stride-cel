@@ -35,7 +35,7 @@ h4{font-size:13px;margin-bottom:8px}
 textarea{display:block;width:100%;min-height:160px;margin-top:10px;padding:8px;font:12px/1.5 ui-monospace,monospace;resize:vertical}
 .version{width:100%;text-align:left;margin-top:7px;display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap}
 .mono{font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-top:1px solid var(--line)}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));margin:0;border-top:1px solid var(--line)}
 .metrics div{padding:10px 13px;min-width:0;border-right:1px solid var(--line)}
 .metrics div:last-child{border-right:none}
 .metrics dt{font-size:12px;color:var(--muted)}

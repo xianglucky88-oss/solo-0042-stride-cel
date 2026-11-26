@@ -3,5 +3,7 @@
 .frame-strip{display:flex;gap:1px;height:18px;margin:14px 14px 8px;overflow:hidden}
 .frame-strip span{flex:1;min-width:0;background:#3b4144;border-radius:2px}
 .frame-strip [data-kind=active]{background:#b57742}.frame-strip [data-kind=event]{background:#e6ba69}
+.frame-strip [data-kind=sound]{background:#a08cf0}
 .frame-strip [data-current=true]{background:#8ed3ca;outline:1px solid #d0ede4;outline-offset:-1px}
 .transport button{width:44px}
+.transport .hearing{outline:1px solid var(--accent);outline-offset:-1px}

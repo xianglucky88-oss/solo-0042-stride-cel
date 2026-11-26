@@ -10,6 +10,8 @@
 - `duration` 为 100–8000 ms，`fps` 为 6–60 整数；`keys` 必须包含给定时长的首尾关键姿态，按 `time` 规范排序，时间不可重复。各姿态包含根坐标 `x,y` 与手臂角度 `arm`（度）。角色为内置示意骨架，不读取或导出骨骼资源。
 - 输出采样为 `i × 1000 / fps < duration`，各分量线性插值。`facing:left` 取负根 X、手臂角度和局部矩形右边作为新左边。坐标为 px，Y 向下。
 - `windows` 的 `from,to` 使用 `[from,to)`，按帧采样点判生效；场景里没取到的区保留在 `unsampled`。`events` 按包含源时间的帧区间投递一次，保留偏移并按时间与 ID 排序。
+- `events` 可带 `sound:true` 发声标记。有声事件随原事件交付 `position` 世界坐标：取事件源时刻的角色根位置，帧与帧之间经过的关键姿态计入，随朝向镜像；事件所属帧与帧内偏移不变。未标记的事件不交付坐标。
+- 试听为内置 150 ms 单声道短音，从选中帧起播一遍：以世界 X=0 为听音中心，±40 px 之外保持单侧声道，中间线性过渡。每声在事件原时刻响起，音尾保持触发时的落点；画面帧由试听时钟推导，拖帧条不放声，暂停或换校样即停。
 - `loop` 仅控制接缝判断和预览回放，成品不额外插入终点帧。忽略水平根位移，垂向差 ≤1 px 且最短角度差 ≤2° 为接缝通过。`cycleTravel` 始终导出。
 - 产物为含 `format: stride-cel/1` 的 JSON，带采样姿态、作用区、事件和循环摘要。页面可逐帧检查；画布不是引擎运行时。
 
@@ -21,6 +23,7 @@
 | 左右朝向 | `POST /api/preview 的 facing` | 根位置、手臂旋向、局部作用区镜像 | 未知方向拒绝 | `node tools/workflow.mjs mirror` |
 | 作用区采样 | `POST /api/preview 的 windows` | 仅在取样时刻落于半开范围时显示作用区，并列未采样 ID | 非正长度作用窗拒绝 | `node tools/workflow.mjs windows` |
 | 事件投递 | `POST /api/preview 的 events` | 事件按所在帧区间投递一次并保留源偏移 | 结束端点上的事件被拒绝 | `node tools/workflow.mjs events` |
+| 有声脚步 | `POST /api/preview 的 events` | 有声事件随原事件交付世界坐标，帧与帧内偏移不变 | 发声标记非布尔时拒绝 | `node tools/workflow.mjs audible` |
 | 循环接缝 | `POST /api/preview 的 loop` | 分别报告角度差、垂向跳变与周期根位移 | 非循环不判断；跳变超阈值在产物中报告 | `node tools/workflow.mjs seam` |
 | 导入文档 | `POST /api/preview` | 规范输入进入校样计算 | 非法 UTF-8、JSON 或字段直接拒绝；不覆盖已有冻结资产 | `node tools/workflow.mjs import` |
 | 冻结校样 | `POST /api/library` | 相同规范输入与产物复用同一摘要；并行提交只创建一次 | 无法规范化的草稿不会签发 | `node tools/workflow.mjs freeze` |
@@ -32,14 +35,15 @@
 
 | 模块 | 参与的生产工作流 |
 | --- | --- |
-| `product/document.mjs` | 姿态帧表、左右朝向、作用区采样、事件投递、循环接缝、导入文档 |
+| `product/document.mjs` | 姿态帧表、左右朝向、作用区采样、事件投递、有声脚步、循环接缝、导入文档 |
 | `product/interpolate.mjs` | 姿态帧表 |
 | `product/frame-clock.mjs` | 姿态帧表、作用区采样、事件投递 |
-| `product/compile.mjs` | 姿态帧表、左右朝向、作用区采样、事件投递、循环接缝 |
-| `product/index.mjs` | 姿态帧表、导入文档、冻结校样 |
+| `product/compile.mjs` | 姿态帧表、左右朝向、作用区采样、事件投递、有声脚步、循环接缝 |
+| `product/index.mjs` | 姿态帧表、有声脚步、导入文档、冻结校样 |
 | `product/orientation.mjs` | 左右朝向、循环接缝 |
 | `product/windows.mjs` | 左右朝向、作用区采样 |
 | `product/dispatch.mjs` | 事件投递 |
+| `product/audible.mjs` | 有声脚步 |
 | `product/continuity.mjs` | 循环接缝 |
 | `server/router.mjs` | 导入文档、冻结校样、下载版本产物、重启后复取、完整性复核 |
 | `server/request-body.mjs` | 导入文档 |
@@ -48,7 +52,7 @@
 | `server/atomic-write.mjs` | 冻结校样 |
 | `server/environment.mjs` | 重启后复取 |
 
-`web/app.mjs`协调编辑与预览生命周期；`web/surface.mjs`装配本产品校样组件。HTML、CSS、DOM、Canvas 或 HTML Audio 均为原生，无前端框架。
+`web/app.mjs`协调编辑与预览生命周期；`web/surface.mjs`装配本产品校样组件；`web/audition.mjs`驱动有声脚步试听。HTML、CSS、DOM、Canvas 或 HTML Audio 均为原生，无前端框架。
 
 ## 存储和验证边界
 

@@ -26,6 +26,10 @@
       "command": "node tools/workflow.mjs events"
     },
     {
+      "workflow_id": "audible",
+      "command": "node tools/workflow.mjs audible"
+    },
+    {
       "workflow_id": "seam",
       "command": "node tools/workflow.mjs seam"
     },
