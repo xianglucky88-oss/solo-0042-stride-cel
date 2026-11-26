@@ -4,12 +4,13 @@ import { servePage } from './static.mjs';
 import { InputError } from './input.mjs';
 
 export function makeRouter(product, library) {
-  const { metadata, demo, render, normalize } = product;
+  const { metadata, demo, demoArm, render, normalize } = product;
   return async function route(req, res) {
     const { pathname } = new URL(req.url, 'http://localhost');
     const method = req.method;
     if (method === 'GET' && !pathname.startsWith('/api/')) return servePage(pathname, res);
     if (method === 'GET' && pathname === '/api/demo') return json(res, { metadata, document: demo() });
+    if (method === 'GET' && pathname === '/api/demo/arm') return json(res, { metadata, document: demoArm() });
     if (method === 'GET' && pathname === '/api/library') return json(res, await library.recent());
     if (method === 'POST' && ['/api/preview', '/api/library'].includes(pathname)) {
       // A browser hosted elsewhere cannot mutate the local project store.

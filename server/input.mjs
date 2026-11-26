@@ -1,7 +1,8 @@
 export class InputError extends Error {
-  constructor(message, status = 422) {
+  constructor(message, status = 422, details = undefined) {
     super(message);
     this.status = status;
+    if (details && typeof details === 'object') this.details = details;
   }
 }
 

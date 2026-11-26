@@ -13,6 +13,21 @@
 - `loop` 仅控制接缝判断和预览回放，成品不额外插入终点帧。忽略水平根位移，垂向差 ≤1 px 且最短角度差 ≤2° 为接缝通过。`cycleTravel` 始终导出。
 - 产物为含 `format: stride-cel/1` 的 JSON，带采样姿态、作用区、事件和循环摘要。页面可逐帧检查；画布不是引擎运行时。
 
+## 二维手臂与托架交接（可选）
+
+草稿可省略本节；省略时帧表、画布与下载产物与旧稿完全一致。提供 `arm`（也接受 `arm2d`、`rig`、`limb` 等近义块）后：
+
+- `arm.grip`：腕关节对应的具名握点 ID（缺省 `wrist`）。每帧产物在 `frame.grips`（`[{id,name,x,y}]`）、`frame.grip` 与 `frame.gripPoints[id]` 中给出其世界坐标，`frame.points`/`namedPoints` 还包含 `shoulder`、`elbow`、`wrist`。
+- `arm.lengths:[upper,fore]`（或 `upper`/`fore`、`upperLength`/`forearmLength` 等）：肩→肘、肘→腕两截原长；缺省时尝试从关键姿态的 `shoulder/elbow/wrist` 点量取，再缺省为 16/16。
+- `arm.bend`（或 `side`/`bendSide`）：肘弯向肩腕连线的哪一侧。`below/down/+1` 为右向肩→腕方向的屏幕下侧（`-1/above/up` 为上侧）；也接受 `left/right`、正负号与 `pole:{x,y}` 极点。
+- `arm.bracket:{x,y}`（也接受 `rack`/`holster`/`dock`/`target`/`socket` 等）：托架世界位置。`arm.handoff:{from,to}` 为交接时段，采样帧满足 `from*fps <= i*1000 < to*fps`，即含起点、不含终点。
+- 交接帧用两截定长 IK：肩取插值后的根位置加 `arm.shoulderOffset`（关键姿态也可给 `shoulder` 世界轨迹），腕锁定在托架，肘由余弦定理求交；拉直或恰好折平（`d===upper+fore` 或 `d===|upper-fore|`）时肘落在线上。肩腕重合且两截等长时，肘沿该采样帧原稿 `pose.arm` 的上臂方向（`(sin a,-cos a)`）放置。
+- 任一交接采样帧满足不了 `|upper-fore| ≤ d(肩,托架) ≤ upper+fore` 时，`POST /api/preview` 与冻结都返回 422，错误体含 `error`、`frame/index/frameIndex`（0 基采样帧号）、`frameNumber`（1 基）与 `unreachableFrames`，不产出假装握住的帧表。
+- 非交接帧按原稿 `arm` 角度作定长 FK；关键姿态可另给 `forearm`（绝对前臂角）或 `elbowBend`（相对折角）延续肩肘动作。
+- `facing:'left'` 时先在原稿空间解算，再把肩、肘、腕、握点、托架与四角一律 `x -> -x` 镜像（Y 不变）。
+- 作用区可加 `attach:'forearm'`（也接受 `bone/limb/parent`、`forearm:true`、`attach:'wrist'/grip 名称` 与对象形式），矩形 `x,y,w,h` 作为前臂局部坐标：局部 +X 沿肘→腕，+Y 为其屏幕垂直方向，默认以肘为轴心（`pivot` 可取 `elbow/wrist/shoulder/root/{x,y}`）。生效时段仍只由原 `from,to` 决定。每个生效区在下载帧中带 `corners`（以及 `points/quad/vertices`，四个 `{x,y}` 真角）、`rotation/RotationDeg` 与 `bounds`。
+- 画布自动把所有帧的肩、肘、腕、握点、托架与区域四角纳入取景；检查器列出当前帧握点世界坐标与各生效区四角。
+
 ## 工作流
 
 | 工作流 | 接口 | 正常结果 | 替代或失败结果 | 生产检查 |

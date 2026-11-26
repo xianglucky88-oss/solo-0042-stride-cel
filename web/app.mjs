@@ -6,7 +6,7 @@ import { refreshVersions } from './versions.mjs';
 import { fields, present, mountImport } from './surface.mjs';
 
 const editor=$('document'), status=$('status'), stage=$('stage');
-const actions=['demo','freeze','render','import'].map($);
+const actions=['demo','demo-arm','freeze','render','import'].map($);
 let metadata,busy=false,dispose,url;
 
 function note(message,error=false) { status.value=message; status.dataset.error=String(error); }
@@ -64,6 +64,12 @@ async function loadDemo() {
   await preview(result.document);
 }
 
+async function loadArmDemo() {
+  const result=await get('/api/demo/arm');
+  metadata=result.metadata;
+  await preview(result.document);
+}
+
 async function listVersions() {
   await refreshVersions($('versions'),id=>task(async()=>{
     const [record,blob]=await Promise.all([get(`/api/library/${id}`),artifact(id)]);
@@ -73,6 +79,7 @@ async function listVersions() {
 }
 
 $('demo').onclick=()=>task(loadDemo);
+$('demo-arm').onclick=()=>task(loadArmDemo);
 $('render').onclick=()=>task(()=>preview(parseDocument(editor.value)));
 $('freeze').onclick=()=>task(async()=>{
   note('正在冻结…');
